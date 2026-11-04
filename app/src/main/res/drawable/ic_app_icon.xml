@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Dark circular background -->
+    <path
+        android:fillColor="#0B0B0B"
+        android:pathData="M48,48m-44,0a44,44 0,1 1,88 0a44,44 0,1 1,-88 0" />
+
+    <path
+        android:strokeColor="#363636"
+        android:strokeWidth="2"
+        android:pathData="M48,48m-43,0a43,43 0,1 1,86 0a43,43 0,1 1,-86 0" />
+
+    <!-- Tachometer dial arc -->
+    <path
+        android:strokeColor="#363636"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M 28,66 A 26,26 0 1,1 68,66" />
+
+    <!-- Electric Cyan Arc -->
+    <path
+        android:strokeColor="#B3CC23"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M 28,66 A 26,26 0 0,1 48,22" />
+
+    <!-- ICE Orange Arc -->
+    <path
+        android:strokeColor="#EC6528"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M 48,22 A 26,26 0 0,1 68,66" />
+
+    <!-- Center Hub -->
+    <path
+        android:fillColor="#B3CC23"
+        android:pathData="M48,48m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+
+    <!-- Needle -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M 48,48 L 61,32" />
+
+    <!-- EV indicator dot -->
+    <path
+        android:fillColor="#B3CC23"
+        android:pathData="M48,60m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+</vector>

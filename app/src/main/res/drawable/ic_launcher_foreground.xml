@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Dial Arc Background -->
+    <path
+        android:strokeColor="#363636"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M 32,74 A 30,30 0 1,1 76,74" />
+
+    <!-- Active Power Arc (Cyan to Orange) -->
+    <path
+        android:strokeColor="#B3CC23"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M 32,74 A 30,30 0 0,1 54,24" />
+
+    <path
+        android:strokeColor="#EC6528"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M 54,24 A 30,30 0 0,1 76,74" />
+
+    <!-- Center Hub -->
+    <path
+        android:fillColor="#B3CC23"
+        android:pathData="M54,54m-5,0a5,5 0 1,1 10,0a5,5 0 1,1 -10,0" />
+
+    <!-- Needle pointing to 2 o'clock -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M 54,54 L 68,36" />
+
+    <!-- 4x4 / Hybrid Badge Text or Icon at bottom -->
+    <path
+        android:fillColor="#B3CC23"
+        android:pathData="M 54,63 L 57,69 L 51,69 Z" />
+    <path
+        android:strokeColor="#B3CC23"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M 44,72 L 64,72" />
+</vector>
