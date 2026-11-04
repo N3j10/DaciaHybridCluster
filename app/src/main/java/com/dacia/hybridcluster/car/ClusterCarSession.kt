@@ -30,7 +30,6 @@ class ClusterCarSession : Session() {
     }
 
     override fun onCreateScreen(intent: Intent): Screen {
-        com.dacia.hybridcluster.model.DaciaFonts.init(carContext)
         ObdManager.start()
         // Surface klastra jest dostarczana TEJ sesji, nie sesji ekranu środkowego
         carContext.getCarService(AppManager::class.java).setSurfaceCallback(renderer)

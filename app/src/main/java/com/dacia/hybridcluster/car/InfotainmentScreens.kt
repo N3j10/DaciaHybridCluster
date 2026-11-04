@@ -333,8 +333,15 @@ class InfotainmentLiveTelemetryScreen(carContext: CarContext) : Screen(carContex
 
     init {
         lifecycleScope.launch {
+            // Szablony Android Auto są odświeżane przez host z ograniczoną częstotliwością –
+            // invalidate() przy każdej ramce OBD (~15/s) tylko marnowało IPC. 1 Hz wystarcza.
+            var lastInvalidate = 0L
             ObdManager.telemetryState.collect {
-                invalidate()
+                val now = android.os.SystemClock.elapsedRealtime()
+                if (now - lastInvalidate >= 1000L) {
+                    lastInvalidate = now
+                    invalidate()
+                }
             }
         }
     }
@@ -345,7 +352,7 @@ class InfotainmentLiveTelemetryScreen(carContext: CarContext) : Screen(carContex
 
         val pane = Pane.Builder()
 
-        val modeStr = strings.translateMode(t.hybridMode)
+        val modeStr = strings.modeName(t.hybridMode)
         val r1 = Row.Builder()
             .setTitle("${strings.gearLabel}: ${t.currentGear} (EV: ${t.eGear})  |  ${strings.modeLabel}: $modeStr")
             .addText("${strings.speedLabel}: ${t.speedKmH.toInt()} km/h  |  ${strings.iceRpmLabel}: ${t.iceRpm} RPM  |  ${strings.eMotorLabel}: ${Math.abs(t.rearMotorRpm)} RPM")
@@ -358,7 +365,7 @@ class InfotainmentLiveTelemetryScreen(carContext: CarContext) : Screen(carContex
 
         val r3 = Row.Builder()
             .setTitle("${strings.torqueSplitLabel}: ${t.frontTorquePercent}% ${strings.frontLabel} / ${t.rearTorquePercent}% ${strings.rearLabel}")
-            .addText("${strings.coolantLabel}: ${t.coolantTempC.toInt()}°C  |  ${strings.engineOilLabel}: ${t.oilTempC.toInt()}°C  |  ATF: ${t.gearboxTempC.toInt()}°C")
+            .addText("${strings.coolantLabel}: ${fmtTemp(t.coolantTempC)}  |  ${strings.engineOilLabel}: ${fmtTemp(t.oilTempC)}  |  ATF: ${fmtTemp(t.gearboxTempC)}")
             .build()
 
         val soc48Str = if (t.hvBatterySocPercent in 5.0..100.0) "${t.hvBatterySocPercent.toInt()}%" else "--%"
@@ -387,3 +394,6 @@ class InfotainmentLiveTelemetryScreen(carContext: CarContext) : Screen(carContex
             .build()
     }
 }
+
+/** Temperatura do wyświetlenia; brak odczytu (NO_TEMP) -> "--" zamiast "-999°C". */
+private fun fmtTemp(t: Double): String = if (t <= -100.0) "--" else "${t.toInt()}°C"

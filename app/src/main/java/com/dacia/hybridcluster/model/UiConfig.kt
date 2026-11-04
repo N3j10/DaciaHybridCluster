@@ -2,6 +2,9 @@ package com.dacia.hybridcluster.model
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.Gson
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -16,7 +19,6 @@ data class UiConfig(
     val showMultiSegmentPower: Boolean = true,
     val showTachometerInWide: Boolean = true,
     val logObdData: Boolean = false,
-    val logExperimentalPids: Boolean = false, // Zbieraj dodatkowe eksperymentalne PID-y z różnych modułów w celu analizy i ulepszeń
     val demoMode: Boolean = false, // Domyślnie false, bo użytkownik jest w aucie i czyta prawdziwe OBD!
     val uiScale: Float = 1.15f, // Skala wielkości tekstu i elementów (0.8f - 1.6f)
 
@@ -62,144 +64,109 @@ data class UiConfig(
     // Język aplikacji ("SYSTEM", "PL", "EN")
     val appLanguage: String = "SYSTEM",
 
-    // Pola kompatybilności wstecznej
-    val clusterTachoOffsetPercent: Float = 24f,
-    val clusterBottomMarginPercent: Float = 22f,
-    val clusterRightMarginPercent: Float = 18f
+    // Zegary: rysuj w obszarze bezpiecznym zgłaszanym przez host Android Auto (stable/visible area)
+    // zamiast na całej powierzchni. Domyślnie wyłączone, bo dotychczasowa kalibracja % jest liczona
+    // względem całej powierzchni.
+    val clusterUseHostSafeArea: Boolean = false
 )
 
+/**
+ * Przechowywanie konfiguracji: cały [UiConfig] zapisany jako jeden JSON (Gson) w SharedPreferences.
+ *
+ * Dodanie nowego pola do [UiConfig] nie wymaga już ręcznego dopisywania odczytu i zapisu
+ * (wcześniej ~40 par getFloat/putFloat). Brakujące w JSON-ie pola dostają wartości domyślne
+ * z konstruktora, a stare instalacje są jednorazowo migrowane z pojedynczych kluczy.
+ */
 object ConfigManager {
     private const val PREFS_NAME = "dacia_hybrid_cluster_prefs"
+    private const val KEY_JSON = "ui_config_json_v1"
+
     private lateinit var prefs: SharedPreferences
+    private val gson = Gson()
 
     private val _configState = MutableStateFlow(UiConfig())
     val configState: StateFlow<UiConfig> = _configState
 
+    @Synchronized
     fun init(context: Context) {
+        if (::prefs.isInitialized) return
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-
-        val legacyTachoOffset = prefs.getFloat("clusterTachoOffsetPercent", 24f)
-        val legacyBottomMargin = prefs.getFloat("clusterBottomMarginPercent", 22f)
-        val legacyRightMargin = prefs.getFloat("clusterRightMarginPercent", 18f)
-
-        val loaded = UiConfig(
-            useVlinkerFastProtocol = prefs.getBoolean("useVlinkerFastProtocol", true),
-            show12vBattery = prefs.getBoolean("show12vBattery", true),
-            show12vWattsMode = prefs.getBoolean("show12vWattsMode", false),
-            showTripStats = prefs.getBoolean("showTripStats", true),
-            showGForce = prefs.getBoolean("showGForce", false),
-            showTorqueSplit = prefs.getBoolean("showTorqueSplit", true),
-            showTemperatures = prefs.getBoolean("showTemperatures", true),
-            showMultiSegmentPower = prefs.getBoolean("showMultiSegmentPower", true),
-            showTachometerInWide = prefs.getBoolean("showTachometerInWide", true),
-            logObdData = prefs.getBoolean("logObdData", false),
-            logExperimentalPids = prefs.getBoolean("logExperimentalPids", false),
-            demoMode = prefs.getBoolean("demoMode", false),
-            uiScale = prefs.getFloat("uiScale", 1.15f),
-
-            // Tryb Pełny
-            fullLeftOffsetPercent = prefs.getFloat("fullLeftOffsetPercent", legacyTachoOffset),
-            fullTachoWidthPercent = prefs.getFloat("fullTachoWidthPercent", 18f),
-            fullRightMarginPercent = prefs.getFloat("fullRightMarginPercent", legacyRightMargin),
-            fullBottomMarginPercent = prefs.getFloat("fullBottomMarginPercent", legacyBottomMargin),
-            fullTopMarginPercent = prefs.getFloat("fullTopMarginPercent", 1f),
-
-            // Tryb Tylko kafelki
-            cardsOnlyLeftOffsetPercent = prefs.getFloat("cardsOnlyLeftOffsetPercent", 25f),
-            cardsOnlyRightMarginPercent = prefs.getFloat("cardsOnlyRightMarginPercent", legacyRightMargin),
-            cardsOnlyBottomMarginPercent = prefs.getFloat("cardsOnlyBottomMarginPercent", legacyBottomMargin),
-            cardsOnlyTopMarginPercent = prefs.getFloat("cardsOnlyTopMarginPercent", 1f),
-
-            // Infotainment
-            lastInfotainmentScreen = prefs.getString("lastInfotainmentScreen", "TELEMETRY") ?: "TELEMETRY",
-            infoViewMode = prefs.getString("infoViewMode", "AUTO") ?: "AUTO",
-            infoFullLeftOffsetPercent = prefs.getFloat("infoFullLeftOffsetPercent", 6f),
-            infoFullTachoWidthPercent = prefs.getFloat("infoFullTachoWidthPercent", 22f),
-            infoFullRightMarginPercent = prefs.getFloat("infoFullRightMarginPercent", 6f),
-            infoFullBottomMarginPercent = prefs.getFloat("infoFullBottomMarginPercent", 6f),
-            infoFullTopMarginPercent = prefs.getFloat("infoFullTopMarginPercent", 4f),
-            infoSplitLeftOffsetPercent = prefs.getFloat("infoSplitLeftOffsetPercent", 5f),
-            infoSplitRightMarginPercent = prefs.getFloat("infoSplitRightMarginPercent", 5f),
-            infoSplitBottomMarginPercent = prefs.getFloat("infoSplitBottomMarginPercent", 6f),
-            infoSplitTopMarginPercent = prefs.getFloat("infoSplitTopMarginPercent", 4f),
-            infoUiScale = prefs.getFloat("infoUiScale", 1.10f),
-
-            // Kolory
-            clusterBgColorHex = prefs.getString("clusterBgColorHex", "#000000") ?: "#000000",
-            clusterCardColorHex = prefs.getString("clusterCardColorHex", "#171717") ?: "#171717",
-            selectedBtDeviceAddress = prefs.getString("selectedBtDeviceAddress", null),
-            selectedBtDeviceName = prefs.getString("selectedBtDeviceName", null),
-            appLanguage = prefs.getString("appLanguage", "SYSTEM") ?: "SYSTEM",
-
-            // Kompatybilność
-            clusterTachoOffsetPercent = prefs.getFloat("fullLeftOffsetPercent", legacyTachoOffset),
-            clusterBottomMarginPercent = prefs.getFloat("fullBottomMarginPercent", legacyBottomMargin),
-            clusterRightMarginPercent = prefs.getFloat("fullRightMarginPercent", legacyRightMargin)
-        )
+        val loaded = prefs.getString(KEY_JSON, null)?.let { fromJson(it) } ?: migrateLegacy(prefs).also { save(it) }
         _configState.value = loaded
-        DaciaFonts.init(context)
-        com.dacia.hybridcluster.obd.ObdLogger.init(context)
         com.dacia.hybridcluster.obd.ObdLogger.setEnabled(loaded.logObdData)
     }
 
     fun updateConfig(newConfig: UiConfig) {
         _configState.value = newConfig
         com.dacia.hybridcluster.obd.ObdLogger.setEnabled(newConfig.logObdData)
-        if (::prefs.isInitialized) {
-            prefs.edit()
-                .putBoolean("useVlinkerFastProtocol", newConfig.useVlinkerFastProtocol)
-                .putBoolean("show12vBattery", newConfig.show12vBattery)
-                .putBoolean("show12vWattsMode", newConfig.show12vWattsMode)
-                .putBoolean("showTripStats", newConfig.showTripStats)
-                .putBoolean("showGForce", newConfig.showGForce)
-                .putBoolean("showTorqueSplit", newConfig.showTorqueSplit)
-                .putBoolean("showTemperatures", newConfig.showTemperatures)
-                .putBoolean("showMultiSegmentPower", newConfig.showMultiSegmentPower)
-                .putBoolean("showTachometerInWide", newConfig.showTachometerInWide)
-                .putBoolean("logObdData", newConfig.logObdData)
-                .putBoolean("logExperimentalPids", newConfig.logExperimentalPids)
-                .putBoolean("demoMode", newConfig.demoMode)
-                .putFloat("uiScale", newConfig.uiScale)
+        if (::prefs.isInitialized) save(newConfig)
+    }
 
-                // Tryb Pełny
-                .putFloat("fullLeftOffsetPercent", newConfig.fullLeftOffsetPercent)
-                .putFloat("fullTachoWidthPercent", newConfig.fullTachoWidthPercent)
-                .putFloat("fullRightMarginPercent", newConfig.fullRightMarginPercent)
-                .putFloat("fullBottomMarginPercent", newConfig.fullBottomMarginPercent)
-                .putFloat("fullTopMarginPercent", newConfig.fullTopMarginPercent)
+    private fun save(cfg: UiConfig) {
+        prefs.edit().putString(KEY_JSON, gson.toJson(cfg)).apply()
+    }
 
-                // Tryb Tylko kafelki
-                .putFloat("cardsOnlyLeftOffsetPercent", newConfig.cardsOnlyLeftOffsetPercent)
-                .putFloat("cardsOnlyRightMarginPercent", newConfig.cardsOnlyRightMarginPercent)
-                .putFloat("cardsOnlyBottomMarginPercent", newConfig.cardsOnlyBottomMarginPercent)
-                .putFloat("cardsOnlyTopMarginPercent", newConfig.cardsOnlyTopMarginPercent)
+    /**
+     * Gson tworzy obiekty bez konstruktora, więc pola nieobecne w zapisanym JSON-ie miałyby wartości 0/null.
+     * Dlatego scalamy zapisany JSON z JSON-em domyślnej konfiguracji.
+     */
+    internal fun fromJson(json: String): UiConfig? = try {
+        val defaults = gson.toJsonTree(UiConfig()).asJsonObject
+        val stored = JsonParser.parseString(json).asJsonObject
+        val merged = JsonObject()
+        for ((k, v) in defaults.entrySet()) merged.add(k, if (stored.has(k) && !stored.get(k).isJsonNull) stored.get(k) else v)
+        // selectedBt* mogą być null – zachowaj zapisany null
+        for (k in listOf("selectedBtDeviceAddress", "selectedBtDeviceName")) if (stored.has(k)) merged.add(k, stored.get(k))
+        gson.fromJson(merged, UiConfig::class.java)
+    } catch (_: Exception) {
+        null
+    }
 
-                // Infotainment
-                .putString("lastInfotainmentScreen", newConfig.lastInfotainmentScreen)
-                .putString("infoViewMode", newConfig.infoViewMode)
-                .putFloat("infoFullLeftOffsetPercent", newConfig.infoFullLeftOffsetPercent)
-                .putFloat("infoFullTachoWidthPercent", newConfig.infoFullTachoWidthPercent)
-                .putFloat("infoFullRightMarginPercent", newConfig.infoFullRightMarginPercent)
-                .putFloat("infoFullBottomMarginPercent", newConfig.infoFullBottomMarginPercent)
-                .putFloat("infoFullTopMarginPercent", newConfig.infoFullTopMarginPercent)
-                .putFloat("infoSplitLeftOffsetPercent", newConfig.infoSplitLeftOffsetPercent)
-                .putFloat("infoSplitRightMarginPercent", newConfig.infoSplitRightMarginPercent)
-                .putFloat("infoSplitBottomMarginPercent", newConfig.infoSplitBottomMarginPercent)
-                .putFloat("infoSplitTopMarginPercent", newConfig.infoSplitTopMarginPercent)
-                .putFloat("infoUiScale", newConfig.infoUiScale)
-
-                // Kolory i adapter
-                .putString("clusterBgColorHex", newConfig.clusterBgColorHex)
-                .putString("clusterCardColorHex", newConfig.clusterCardColorHex)
-                .putString("selectedBtDeviceAddress", newConfig.selectedBtDeviceAddress)
-                .putString("selectedBtDeviceName", newConfig.selectedBtDeviceName)
-                .putString("appLanguage", newConfig.appLanguage)
-
-                // Kompatybilność
-                .putFloat("clusterTachoOffsetPercent", newConfig.fullLeftOffsetPercent)
-                .putFloat("clusterBottomMarginPercent", newConfig.fullBottomMarginPercent)
-                .putFloat("clusterRightMarginPercent", newConfig.fullRightMarginPercent)
-                .apply()
-        }
+    /** Odczyt ustawień zapisanych przez starą wersję aplikacji (osobny klucz na każde pole). */
+    private fun migrateLegacy(p: SharedPreferences): UiConfig {
+        val d = UiConfig()
+        val legacyTachoOffset = p.getFloat("clusterTachoOffsetPercent", d.fullLeftOffsetPercent)
+        val legacyBottomMargin = p.getFloat("clusterBottomMarginPercent", d.fullBottomMarginPercent)
+        val legacyRightMargin = p.getFloat("clusterRightMarginPercent", d.fullRightMarginPercent)
+        return UiConfig(
+            useVlinkerFastProtocol = p.getBoolean("useVlinkerFastProtocol", d.useVlinkerFastProtocol),
+            show12vBattery = p.getBoolean("show12vBattery", d.show12vBattery),
+            show12vWattsMode = p.getBoolean("show12vWattsMode", d.show12vWattsMode),
+            showTripStats = p.getBoolean("showTripStats", d.showTripStats),
+            showGForce = p.getBoolean("showGForce", d.showGForce),
+            showTorqueSplit = p.getBoolean("showTorqueSplit", d.showTorqueSplit),
+            showTemperatures = p.getBoolean("showTemperatures", d.showTemperatures),
+            showMultiSegmentPower = p.getBoolean("showMultiSegmentPower", d.showMultiSegmentPower),
+            showTachometerInWide = p.getBoolean("showTachometerInWide", d.showTachometerInWide),
+            logObdData = p.getBoolean("logObdData", d.logObdData),
+            demoMode = p.getBoolean("demoMode", d.demoMode),
+            uiScale = p.getFloat("uiScale", d.uiScale),
+            fullLeftOffsetPercent = p.getFloat("fullLeftOffsetPercent", legacyTachoOffset),
+            fullTachoWidthPercent = p.getFloat("fullTachoWidthPercent", d.fullTachoWidthPercent),
+            fullRightMarginPercent = p.getFloat("fullRightMarginPercent", legacyRightMargin),
+            fullBottomMarginPercent = p.getFloat("fullBottomMarginPercent", legacyBottomMargin),
+            fullTopMarginPercent = p.getFloat("fullTopMarginPercent", d.fullTopMarginPercent),
+            cardsOnlyLeftOffsetPercent = p.getFloat("cardsOnlyLeftOffsetPercent", d.cardsOnlyLeftOffsetPercent),
+            cardsOnlyRightMarginPercent = p.getFloat("cardsOnlyRightMarginPercent", legacyRightMargin),
+            cardsOnlyBottomMarginPercent = p.getFloat("cardsOnlyBottomMarginPercent", legacyBottomMargin),
+            cardsOnlyTopMarginPercent = p.getFloat("cardsOnlyTopMarginPercent", d.cardsOnlyTopMarginPercent),
+            lastInfotainmentScreen = p.getString("lastInfotainmentScreen", d.lastInfotainmentScreen) ?: d.lastInfotainmentScreen,
+            infoViewMode = p.getString("infoViewMode", d.infoViewMode) ?: d.infoViewMode,
+            infoFullLeftOffsetPercent = p.getFloat("infoFullLeftOffsetPercent", d.infoFullLeftOffsetPercent),
+            infoFullTachoWidthPercent = p.getFloat("infoFullTachoWidthPercent", d.infoFullTachoWidthPercent),
+            infoFullRightMarginPercent = p.getFloat("infoFullRightMarginPercent", d.infoFullRightMarginPercent),
+            infoFullBottomMarginPercent = p.getFloat("infoFullBottomMarginPercent", d.infoFullBottomMarginPercent),
+            infoFullTopMarginPercent = p.getFloat("infoFullTopMarginPercent", d.infoFullTopMarginPercent),
+            infoSplitLeftOffsetPercent = p.getFloat("infoSplitLeftOffsetPercent", d.infoSplitLeftOffsetPercent),
+            infoSplitRightMarginPercent = p.getFloat("infoSplitRightMarginPercent", d.infoSplitRightMarginPercent),
+            infoSplitBottomMarginPercent = p.getFloat("infoSplitBottomMarginPercent", d.infoSplitBottomMarginPercent),
+            infoSplitTopMarginPercent = p.getFloat("infoSplitTopMarginPercent", d.infoSplitTopMarginPercent),
+            infoUiScale = p.getFloat("infoUiScale", d.infoUiScale),
+            clusterBgColorHex = p.getString("clusterBgColorHex", d.clusterBgColorHex) ?: d.clusterBgColorHex,
+            clusterCardColorHex = p.getString("clusterCardColorHex", d.clusterCardColorHex) ?: d.clusterCardColorHex,
+            selectedBtDeviceAddress = p.getString("selectedBtDeviceAddress", null),
+            selectedBtDeviceName = p.getString("selectedBtDeviceName", null),
+            appLanguage = p.getString("appLanguage", d.appLanguage) ?: d.appLanguage
+        )
     }
 }

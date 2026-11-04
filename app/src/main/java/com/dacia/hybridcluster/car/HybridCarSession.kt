@@ -15,7 +15,6 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.dacia.hybridcluster.model.ConfigManager
 import com.dacia.hybridcluster.obd.ObdManager
-import com.dacia.hybridcluster.weather.WeatherManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -46,10 +45,8 @@ class HybridCarSession : Session() {
     }
 
     override fun onCreateScreen(intent: Intent): Screen {
-        com.dacia.hybridcluster.model.DaciaFonts.init(carContext)
-        // 1. Uruchomienie odpytywania danych OBD i pogody
+        // 1. Uruchomienie odpytywania OBD (konfiguracja i czcionki są inicjalizowane w DaciaApp)
         ObdManager.start()
-        WeatherManager.startPolling(sessionScope)
 
         // 2. KLUCZOWE: zegary dostają obraz tylko przy AKTYWNEJ trasie (jak w Waze).
         val nav = carContext.getCarService(NavigationManager::class.java)

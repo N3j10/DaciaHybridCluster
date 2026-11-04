@@ -240,8 +240,6 @@ interface AppStrings {
     val bat48vLabel: String
     val bat12vLabel: String
     val bat12vWattsLabel: String
-    val autoLoadLabel: String
-    val dischargeLabel: String
     val usedBatteryLabel: String
     val regenRecoveryLabel: String
     val fuelSavedLabel: String
@@ -257,8 +255,13 @@ interface AppStrings {
     val calibPreviewCardsInfoFull: String
     val calibPreviewCardsInfoSplit: String
     fun langSwitchDesc(nextName: String): String
-    fun translateMode(mode: String): String
-    fun translateReason(reason: String): String
+    val toggleHostSafeAreaTitle: String
+    val toggleHostSafeAreaSubtitle: String
+    fun modeName(mode: HybridMode): String
+    fun inhibitName(reason: EvInhibit): String
+
+    /** Pełna linia blokady EV wyświetlana pod obrotomierzem, np. "BLOKADA EV: KLIMA / NAWIEW". */
+    fun inhibitLine(reason: EvInhibit): String = "$evBlockLabel: ${inhibitName(reason)}"
 }
 
 /**
@@ -466,8 +469,6 @@ object StringsPl : AppStrings {
     override val bat48vLabel = "BATERIA 48V"
     override val bat12vLabel = "BATERIA 12V"
     override val bat12vWattsLabel = "POBÓR MOCY 12V"
-    override val autoLoadLabel = "Auto: "
-    override val dischargeLabel = "Rozład: "
     override val usedBatteryLabel = "ZUŻYTO Z BATERII"
     override val regenRecoveryLabel = "ODZYSK REGEN"
     override val fuelSavedLabel = "ZYSK PALIWA"
@@ -483,8 +484,49 @@ object StringsPl : AppStrings {
     override val calibPreviewCardsInfoFull = "Kafelki parametrów\n(Moc, Temp, Bateria, Trip)"
     override val calibPreviewCardsInfoSplit = "Kafelki parametrów\n(Bieg, Tryb, 4x4, Baterie)"
     override fun langSwitchDesc(nextName: String) = "Kliknij, aby przełączyć na: $nextName"
-    override fun translateMode(mode: String): String = mode
-    override fun translateReason(reason: String): String = reason
+    override val toggleHostSafeAreaTitle = "Zegary: obszar bezpieczny Android Auto"
+    override val toggleHostSafeAreaSubtitle = "Rysuj tylko w obszarze zgłoszonym przez auto (marginesy % liczone wewnątrz niego). Po włączeniu sprawdź kalibrację."
+    override fun modeName(mode: HybridMode): String = when (mode) {
+        HybridMode.EV_READY -> "EV / READY"
+        HybridMode.STANDSTILL -> "POSTÓJ"
+        HybridMode.CHARGING_48V -> "ŁADOWANIE 48V"
+        HybridMode.STANDBY -> "STANDBY"
+        HybridMode.REGEN -> "REKUPERACJA"
+        HybridMode.COASTING -> "ŻEGLOWANIE"
+        HybridMode.PURE_EV -> "PURE EV"
+        HybridMode.REVERSE -> "COFANIE (e-AWD)"
+        HybridMode.AWD_4X4 -> "4x4 E-AWD"
+        HybridMode.EAWD_BOOST -> "E-AWD BOOST"
+        HybridMode.HYBRID_EAWD -> "HYBRYDA e-AWD"
+        HybridMode.HYBRID_AUTO -> "HYBRYDA AUTO"
+    }
+
+    override fun inhibitName(reason: EvInhibit): String = when (reason) {
+        EvInhibit.SWITCHED_OFF -> "WYŁĄCZONY"
+        EvInhibit.SYSTEM_FAULT -> "USTERKA"
+        EvInhibit.SLOPE -> "POCHYLENIE"
+        EvInhibit.VEHICLE_MOVING -> "RUCH AUTA"
+        EvInhibit.ENERGY_12V_48V -> "ENERGIA 12V/48V"
+        EvInhibit.ENGINE_GPF -> "SILNIK / GPF"
+        EvInhibit.BRAKE -> "HAMULEC"
+        EvInhibit.HOOD -> "MASKA"
+        EvInhibit.DOOR -> "DRZWI"
+        EvInhibit.SEATBELT -> "PASY"
+        EvInhibit.REVERSE_GEAR -> "WSTECZNY"
+        EvInhibit.HVAC -> "KLIMA / NAWIEW"
+        EvInhibit.STEERING -> "KIEROWNICA"
+        EvInhibit.KEYCARD -> "KARTA"
+        EvInhibit.SYSTEM -> "SYSTEM"
+        EvInhibit.CLUTCH -> "SPRZĘGŁO"
+        EvInhibit.PTC_HEATER -> "GRZAŁKA PTC"
+        EvInhibit.VEEM_12V -> "ENERGIA 12V (VEEM)"
+        EvInhibit.BATTERY_48V -> "BATERIA 48V"
+        EvInhibit.POWERTRAIN -> "SILNIK / NAPĘD"
+        EvInhibit.COOLING -> "CHŁODZENIE / TERMIKA"
+        EvInhibit.SAILING_CLUTCH -> "SPRZĘGŁO / SAILING"
+        EvInhibit.BRAKE_ABS -> "HAMULEC / ABS"
+        EvInhibit.COLD_ENGINE -> "ZIMNY SILNIK"
+    }
 }
 
 /**
@@ -692,8 +734,6 @@ object StringsEn : AppStrings {
     override val bat48vLabel = "48V BATTERY"
     override val bat12vLabel = "12V BATTERY"
     override val bat12vWattsLabel = "12V POWER DRAW"
-    override val autoLoadLabel = "Car: "
-    override val dischargeLabel = "Disch: "
     override val usedBatteryLabel = "BATTERY USED"
     override val regenRecoveryLabel = "REGEN RECOVERY"
     override val fuelSavedLabel = "FUEL SAVED"
@@ -709,45 +749,49 @@ object StringsEn : AppStrings {
     override val calibPreviewCardsInfoFull = "Telemetry tiles\n(Power, Temp, Bat, Trip)"
     override val calibPreviewCardsInfoSplit = "Telemetry tiles\n(Gear, Mode, 4x4, Batteries)"
     override fun langSwitchDesc(nextName: String) = "Tap to switch to: $nextName"
+    override val toggleHostSafeAreaTitle = "Cluster: Android Auto safe area"
+    override val toggleHostSafeAreaSubtitle = "Draw only inside the area reported by the car (% margins apply within it). Re-check calibration after enabling."
 
-    override fun translateMode(mode: String): String = when (mode.trim().uppercase(Locale.US)) {
-        "POSTÓJ" -> "STOPPED"
-        "ŁADOWANIE 48V" -> "CHARGING 48V"
-        "ŻEGLOWANIE" -> "COASTING"
-        "COFANIE" -> "REVERSING"
-        "HYBRYDA AUTO" -> "HYBRID AUTO"
-        "REKUPERACJA" -> "RECUPERATION"
-        "PURE EV" -> "PURE EV"
-        "E-AWD BOOST" -> "E-AWD BOOST"
-        else -> mode
+    override fun modeName(mode: HybridMode): String = when (mode) {
+        HybridMode.EV_READY -> "EV / READY"
+        HybridMode.STANDSTILL -> "STOPPED"
+        HybridMode.CHARGING_48V -> "CHARGING 48V"
+        HybridMode.STANDBY -> "STANDBY"
+        HybridMode.REGEN -> "RECUPERATION"
+        HybridMode.COASTING -> "COASTING"
+        HybridMode.PURE_EV -> "PURE EV"
+        HybridMode.REVERSE -> "REVERSING (e-AWD)"
+        HybridMode.AWD_4X4 -> "4x4 E-AWD"
+        HybridMode.EAWD_BOOST -> "E-AWD BOOST"
+        HybridMode.HYBRID_EAWD -> "HYBRID e-AWD"
+        HybridMode.HYBRID_AUTO -> "HYBRID AUTO"
     }
 
-    override fun translateReason(reason: String): String {
-        val upper = reason.trim().uppercase(Locale.US)
-        return when {
-            upper.contains("ZIMNY OLEJ SKRZYNI") -> "EV INHIBIT: COLD GEARBOX OIL"
-            upper.contains("WYSOKA TEMP. SILNIKA TYŁ") -> "EV INHIBIT: REAR MOTOR HOT"
-            upper.contains("KIEROWNICA SKRĘCONA") -> "EV INHIBIT: STEERING ANGLE"
-            upper.contains("KLAPA / DRZWI OTWARTE") -> "EV INHIBIT: DOOR / HOOD OPEN"
-            upper.contains("PAS KIEROWCY ODPIĘTY") -> "EV INHIBIT: SEATBELT UNFASTENED"
-            upper.contains("BATERIA 48V ŁADOWANIE") -> "EV INHIBIT: 48V CHARGING"
-            upper.contains("BATERIA 48V") -> "EV INHIBIT: 48V BATTERY"
-            upper.contains("BATERIA 12V ROZŁADOWANA") -> "EV INHIBIT: 12V LOW"
-            upper.contains("BATERIA 12V") -> "EV INHIBIT: 12V BATTERY"
-            upper.contains("NISKA TEMP. ZEWNĘTRZNA") -> "EV INHIBIT: LOW AMBIENT TEMP"
-            upper.contains("KLIMATYZACJA") || upper.contains("KLIMA") -> "EV INHIBIT: A/C CABIN CLIMATE"
-            upper.contains("REGENERACJA GPF") || upper.contains("GPF") -> "EV INHIBIT: GPF REGEN"
-            upper.contains("SILNIK / NAPĘD") -> "EV INHIBIT: ENGINE / POWERTRAIN"
-            upper.contains("ZIMNY SILNIK") || upper.contains("SILNIK SPALINOWY NIE DOGRZANY") -> "EV INHIBIT: COLD ENGINE"
-            upper.contains("BIEG JAŁOWY N") || upper.contains("SKRZYNIA P") -> "EV INHIBIT: NEUTRAL / PARK"
-            upper.contains("ROZRUCH SILNIKA") -> "EV INHIBIT: ENGINE CRANK"
-            upper.contains("ZBYT NISKA PRĘDKOŚĆ") -> "EV INHIBIT: LOW SPEED"
-            upper.contains("PRĘDKOŚĆ > 115") -> "EV INHIBIT: SPEED > 115 KM/H"
-            upper.contains("PEDAŁ GAZU") -> "EV INHIBIT: ACCELERATOR PEDAL"
-            upper.contains("MANEWROWANIE") -> "EV INHIBIT: MANEUVERING"
-            upper.startsWith("BLOKADA EV:") -> "EV INHIBIT: " + reason.substringAfter("BLOKADA EV:").trim()
-            else -> reason
-        }
+    override fun inhibitName(reason: EvInhibit): String = when (reason) {
+        EvInhibit.SWITCHED_OFF -> "SWITCHED OFF"
+        EvInhibit.SYSTEM_FAULT -> "SYSTEM FAULT"
+        EvInhibit.SLOPE -> "SLOPE"
+        EvInhibit.VEHICLE_MOVING -> "VEHICLE MOVING"
+        EvInhibit.ENERGY_12V_48V -> "12V/48V ENERGY"
+        EvInhibit.ENGINE_GPF -> "ENGINE / GPF"
+        EvInhibit.BRAKE -> "BRAKE PEDAL"
+        EvInhibit.HOOD -> "HOOD OPEN"
+        EvInhibit.DOOR -> "DOOR OPEN"
+        EvInhibit.SEATBELT -> "SEATBELT"
+        EvInhibit.REVERSE_GEAR -> "REVERSE GEAR"
+        EvInhibit.HVAC -> "A/C / BLOWER"
+        EvInhibit.STEERING -> "STEERING ANGLE"
+        EvInhibit.KEYCARD -> "KEY CARD"
+        EvInhibit.SYSTEM -> "SYSTEM"
+        EvInhibit.CLUTCH -> "CLUTCH"
+        EvInhibit.PTC_HEATER -> "PTC HEATER"
+        EvInhibit.VEEM_12V -> "12V ENERGY (VEEM)"
+        EvInhibit.BATTERY_48V -> "48V BATTERY"
+        EvInhibit.POWERTRAIN -> "ENGINE / POWERTRAIN"
+        EvInhibit.COOLING -> "COOLING / THERMAL"
+        EvInhibit.SAILING_CLUTCH -> "SAILING CLUTCH"
+        EvInhibit.BRAKE_ABS -> "BRAKE / ABS"
+        EvInhibit.COLD_ENGINE -> "COLD ENGINE"
     }
 }
 

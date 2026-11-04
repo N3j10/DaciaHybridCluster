@@ -39,6 +39,9 @@ import com.dacia.hybridcluster.model.UiConfig
 import com.dacia.hybridcluster.obd.ObdConnectionStatus
 import com.dacia.hybridcluster.obd.ObdLogger
 import com.dacia.hybridcluster.obd.ObdManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 enum class AppScreen {
     MAIN,
@@ -56,8 +59,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        com.dacia.hybridcluster.model.DaciaFonts.init(applicationContext)
-        ConfigManager.init(applicationContext)
+        // ConfigManager / ObdLogger / DaciaFonts są inicjalizowane w DaciaApp.onCreate()
         ObdManager.start()
 
         checkPermissions()
@@ -127,10 +129,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkPermissions() {
-        val permissions = mutableListOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
+        // Lokalizacja nie jest już potrzebna (usunięto nieużywaną pogodę; adapter wybieramy ze sparowanych urządzeń)
+        val permissions = mutableListOf<String>()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             permissions.add(Manifest.permission.BLUETOOTH_CONNECT)
             permissions.add(Manifest.permission.BLUETOOTH_SCAN)
@@ -616,6 +616,15 @@ fun ClusterElementsScreen(
                 HorizontalDivider(color = Color(0xFF22283A), modifier = Modifier.padding(vertical = 8.dp))
 
                 ConfigToggleItem(
+                    title = strings.toggleHostSafeAreaTitle,
+                    subtitle = strings.toggleHostSafeAreaSubtitle,
+                    checked = config.clusterUseHostSafeArea,
+                    onCheckedChange = { ConfigManager.updateConfig(config.copy(clusterUseHostSafeArea = it)) }
+                )
+
+                HorizontalDivider(color = Color(0xFF22283A), modifier = Modifier.padding(vertical = 8.dp))
+
+                ConfigToggleItem(
                     title = strings.toggle12vTitle,
                     subtitle = strings.toggle12vSubtitle,
                     checked = config.show12vBattery,
@@ -715,9 +724,8 @@ fun LiveTelemetryScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 val boostStatus = if (telemetry.fuelInjectionBoostActive) strings.boostActive else strings.boostInactive
-                val ssRaw = telemetry.startStopInhibitReason
-                val ssStatus = if (ssRaw.isNotBlank()) "  |  ${ssRaw.lines().filter { it.isNotBlank() }.joinToString(" + ") { strings.translateReason(it.trim()) }}" else ""
-                val modeStr = strings.translateMode(telemetry.hybridMode)
+                val ssStatus = if (telemetry.evInhibits.isNotEmpty()) "  |  ${telemetry.evInhibits.joinToString(" + ") { strings.inhibitLine(it) }}" else ""
+                val modeStr = strings.modeName(telemetry.hybridMode)
                 Text("${strings.gearLabel}: ${telemetry.currentGear} (EV: ${telemetry.eGear})  |  ${strings.modeLabel}: $modeStr  |  $boostStatus$ssStatus", color = Color.White, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("${strings.speedLabel}: ${telemetry.speedKmH.toInt()} km/h  |  ${strings.iceRpmLabel}: ${telemetry.iceRpm} RPM  |  ${strings.eMotorLabel}: ${Math.abs(telemetry.rearMotorRpm)} RPM", color = Color(0xFF8E99A4), fontSize = 13.sp)
@@ -728,7 +736,7 @@ fun LiveTelemetryScreen(
                 val atfText = if (telemetry.gearboxTempC > -100) "${telemetry.gearboxTempC.toInt()}°C" else "--"
                 Text("${strings.coolantLabel}: $coolantText  |  ${strings.engineOilLabel}: $oilText  |  ${strings.gearboxAtfLabel}: $atfText", color = Color(0xFFB3CC23), fontSize = 13.sp)
                 val soc48Str = if (telemetry.hvBatterySocPercent in 5.0..100.0) "${telemetry.hvBatterySocPercent.toInt()}% SoC" else "${telemetry.hsgLoadPercent.toInt()}% MHEV"
-                val v48Val = if (telemetry.hvBatteryVoltage > 20.0) telemetry.hvBatteryVoltage else telemetry.hsgVoltage48v
+                val v48Val = telemetry.hvBatteryVoltage
                 val v48Str = "${String.format(java.util.Locale.US, "%.1f", v48Val)}V ($soc48Str)"
                 val soc12Str = if (telemetry.bat12vSocPercent > 0) " (${telemetry.bat12vSocPercent}% SoC)" else ""
                 Text("48V: $v48Str  |  12V: ${String.format(java.util.Locale.US, "%.1f", telemetry.bat12vVoltage)}V$soc12Str • DCDC: +${telemetry.bat12vPowerWatts.toInt()}W (${telemetry.bat12vCurrent.toInt()}A)", color = Color(0xFF29B6F6), fontSize = 13.sp)
@@ -758,15 +766,20 @@ fun ObdDiagnosticsScreen(
 ) {
     val config by ConfigManager.configState.collectAsState()
     val strings = remember(config.appLanguage) { StringsManager.get(config.appLanguage) }
-    val telemetry by ObdManager.telemetryState.collectAsState()
 
     var logLines by remember { mutableStateOf(emptyList<String>()) }
     var logSizeKb by remember { mutableStateOf(0L) }
 
-    LaunchedEffect(config.logObdData, telemetry) {
-        if (config.logObdData) {
-            logLines = ObdLogger.getLastLines(25)
-            logSizeKb = ObdLogger.getFileSizeKb()
+    // Odświeżanie co 1.5 s w tle (wcześniej: przy KAŻDEJ ramce telemetrii czytany był cały plik logu
+    // – nawet kilkanaście MB – na wątku UI, co groziło ANR)
+    LaunchedEffect(config.logObdData) {
+        while (config.logObdData) {
+            val (lines, size) = withContext(Dispatchers.IO) {
+                ObdLogger.getLastLines(25) to ObdLogger.getFileSizeKb()
+            }
+            logLines = lines
+            logSizeKb = size
+            delay(1500)
         }
     }
 
