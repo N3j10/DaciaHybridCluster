@@ -37,6 +37,9 @@ android {
     buildFeatures {
         compose = true
     }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -53,8 +56,10 @@ dependencies {
     implementation(libs.androidx.car.app)
     implementation(libs.androidx.car.app.projected)
 
-    // Coroutines & Networking (Open-Meteo)
+    // Coroutines, Gson (zapis konfiguracji jako JSON)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.okhttp)
     implementation(libs.gson)
+
+    // Testy JVM: dekodery PID-ów, kalkulator mocy, protokół ELM i symulacja na logach z jazdy
+    testImplementation(libs.junit)
 }

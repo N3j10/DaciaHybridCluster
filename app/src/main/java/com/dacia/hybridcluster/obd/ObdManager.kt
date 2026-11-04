@@ -191,7 +191,7 @@ object ObdManager {
     private suspend fun runSession(link: ElmLink, generation: Int) {
         activeLink = link
         _connectionStatus.value = ObdConnectionStatus.CONNECTED
-        val protocol = ObdProtocol(link, obdLog) { ConfigManager.configState.value.useVlinkerFastProtocol }
+        val protocol = ObdProtocol(link, obdLog, { ConfigManager.configState.value.useVlinkerFastProtocol })
         val poller = PidPoller(protocol)
         try {
             protocol.initialize()

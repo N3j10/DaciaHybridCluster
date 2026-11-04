@@ -9,8 +9,12 @@ class ObdProtocol(
     private val link: ElmLink,
     private val log: ObdLog = ObdLog.None,
     /** Czy użytkownik wybrał profil vLinker MS (STPX). Czytane przy każdym zapytaniu. */
-    private val fastProfile: () -> Boolean = { true }
+    private val fastProfile: () -> Boolean = { true },
+    /** Tylko dla testów porównawczych: stara polityka ponawiania (wspólny licznik, bez PID-ów krytycznych). */
+    private val legacyRetryPolicy: Boolean = false,
+    private val clock: () -> Long = System::currentTimeMillis
 ) {
+    private var legacySkipTick = 0
     var stpxSupported = false
         private set
     private var currentTargetEcu = ""
@@ -18,7 +22,7 @@ class ObdProtocol(
     private var lastElmConfiguredEcu = ""
 
     /** Licznik kolejnych błędów i pominięć dla klucza "ECU:PID". */
-    private class FailState { var failures = 0; var skipped = 0 }
+    private class FailState { var failures = 0; var nextRetryAt = 0L }
     private val failStates = HashMap<String, FailState>()
 
     private val useFast get() = stpxSupported && fastProfile()
@@ -92,7 +96,7 @@ class ObdProtocol(
      * Wysyła PID do bieżącego ECU i zwraca bajty danych po nagłówku odpowiedzi (np. "410C" -> [A, B]).
      * Zwraca null przy NO DATA, odpowiedzi negatywnej (7F) lub braku odpowiedzi.
      *
-     * PID, który zawiódł 5 razy z rzędu, jest ponawiany tylko co [RETRY_EVERY] wywołań – chyba że jest
+     * PID, który zawiódł 5 razy z rzędu, jest ponawiany najwyżej co [RETRY_INTERVAL_MS] – chyba że jest
      * oznaczony jako [critical] (obroty, prędkość, moment): takie PID-y odpytujemy zawsze, bo ich brak
      * zwykle oznacza chwilowy problem Bluetooth, a nie brak obsługi w ECU.
      */
@@ -100,9 +104,15 @@ class ObdProtocol(
         val expectedPrefix = positivePrefix(cmd)
         val key = "$currentTargetEcu:$cmd"
         val st = failStates.getOrPut(key) { FailState() }
-        if (!critical && st.failures >= 5) {
-            st.skipped++
-            if (st.skipped % RETRY_EVERY != 0) return null
+        if (legacyRetryPolicy) {
+            if (st.failures >= 5) {
+                legacySkipTick++
+                if (legacySkipTick % RETRY_EVERY != 0) return null
+            }
+        } else if (!critical && st.failures >= 5 && clock() < st.nextRetryAt) {
+            // Wcześniej: wspólny licznik pominięć dla wszystkich PID-ów – czas do ponowienia zależał
+            // od tego, ile innych PID-ów akurat nie odpowiadało (od sekund do kilkunastu minut).
+            return null
         }
 
         val fast = useFast && currentTargetEcu.isNotEmpty()
@@ -124,10 +134,10 @@ class ObdProtocol(
                 log.log("CMD: $cmd -> RESP: '$resp' | BRAK '$expectedPrefix' na $currentTargetEcu")
             }
             st.failures++
+            if (st.failures >= 5) st.nextRetryAt = clock() + RETRY_INTERVAL_MS
             return null
         }
         st.failures = 0
-        st.skipped = 0
         val hex = resp.substring(idx + expectedPrefix.length).takeWhile { it.isLetterOrDigit() }
         if (hex.length < 2) {
             if (log.enabled) log.log("CMD: $cmd -> RESP: '$resp' | ZA KRÓTKA ODPOWIEDŹ")
@@ -151,7 +161,8 @@ class ObdProtocol(
     }
 
     companion object {
-        const val RETRY_EVERY = 30
+        const val RETRY_EVERY = 30 // tylko stara polityka (testy porównawcze)
+        const val RETRY_INTERVAL_MS = 5_000L
 
         /** "010C" -> "410C", "221039" -> "621039" (odpowiedź pozytywna = SID + 0x40). */
         fun positivePrefix(cmd: String): String {
