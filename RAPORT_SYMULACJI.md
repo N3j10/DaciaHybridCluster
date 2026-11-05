@@ -22,7 +22,7 @@ a równolegle kopia pętli sprzed refaktoru (`LegacyEngine`). Wyniki są porówn
 ### Zamierzone różnice względem starej wersji
 
 * **Trip.** Stary kod zerował trip przy każdym ponownym połączeniu. W najnowszym logu w ciągu jednego wieczoru było
-  7 połączeń w ciągu 4 godzin. Pod koniec tej jazdy stara aplikacja pokazywała **0,1 km**, a przejechane było **58,8 km**.
+  7 połączeń w ciągu ok. 4 godzin. Pod koniec tej jazdy stara aplikacja pokazywała **0,1 km**, a przejechane było **58,8 km**.
   Nowy trip jest ciągły i zaczyna się od zera dopiero po ponad 4 h przerwy (np. następnego dnia).
 * **Ponawianie PID-ów.** Stary kod po 5 błędach z rzędu ponawiał PID według licznika wspólnego dla wszystkich
   PID-ów. Dotyczyło to także obrotów i prędkości, które mogły się wtedy „zamrozić” (widać to w logach
@@ -34,7 +34,7 @@ a równolegle kopia pętli sprzed refaktoru (`LegacyEngine`). Wyniki są porówn
 ### Obserwacje z danych
 
 * Najczęstsza przyczyna blokady EV to **ENERGIA 12V (VEEM)**, flaga 220142. Ma wartość 1 w 68% odczytów
-  z najnowszego logu, więc w ponad połowie cykli z pracującym silnikiem to zarządzanie energią 12V nie pozwala zgasić ICE.
+  z najnowszego logu i występuje w 81% cykli z pracującym silnikiem: zwykle to zarządzanie energią 12V nie pozwala zgasić ICE.
   Druga przyczyna to klimatyzacja / nawiew.
 * Auto jeździło głównie na LPG (222172 = 1), dotrysk benzyny nie wystąpił.
 * Moc ICE jest dostępna tylko w najnowszym logu. Starsze logi pochodzą z wersji bez PID 221039.
