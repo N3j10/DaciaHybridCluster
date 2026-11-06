@@ -10,6 +10,12 @@ Aplikacja Android / Android Auto dla samochodów **Dacia Hybrid-G 150 e-AWD** (D
 
 **[English version below](#english)**
 
+### Zegary (ekran kierowcy)
+![Zegary w Dacii – obrotomierz, biegi, moc, temperatury, baterie i trip](docs/zegary.jpg)
+
+### Ekran środkowy (Android Auto)
+![Ekran środkowy Android Auto z kafelkami telemetrii](docs/ekran_srodkowy.jpg)
+
 ## Pobieranie i instalacja
 
 Gotowy plik APK jest w zakładce **[Releases](https://github.com/N3j10/DaciaHybridCluster/releases/latest)**.
@@ -107,6 +113,8 @@ Android / Android Auto app for **Dacia Hybrid-G 150 e-AWD** cars (Duster III / B
   reasons why EV mode is blocked.
 * **Centre screen (infotainment):** the same tiles, with a tachometer (full screen) or without it (Coolwalk split screen).
 * **Phone:** settings in Jetpack Compose (elements, calibration, OBD diagnostics, live preview) and a demo mode.
+
+Screenshots from the car: [cluster](docs/zegary.jpg) and [centre screen](docs/ekran_srodkowy.jpg) (shown at the top of this page).
 
 ### Download and installation
 
