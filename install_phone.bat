@@ -1,6 +1,6 @@
 @echo off
-set "ADB=%USERPROFILE%\AppData\Local\Android\Sdk\platform-tools\adb.exe"
-set "APK=%USERPROFILE%\.gemini\antigravity\scratch\DaciaHybridCluster\DaciaHybridCluster.apk"
+set "ADB=%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe"
+set "APK=%~dp0DaciaHybridCluster.apk"
 
 echo Czekam na podlaczenie telefonu USB...
 %ADB% wait-for-device

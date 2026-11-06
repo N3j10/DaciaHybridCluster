@@ -3,7 +3,7 @@ rem Kompilacja APK + wyslanie na telefon przez ADB (do folderu Download, instala
 rem Pelny log kompilacji: build\ostatnia_kompilacja.log
 setlocal
 cd /d "%~dp0"
-set "ADB=%USERPROFILE%\AppData\Local\Android\Sdk\platform-tools\adb.exe"
+set "ADB=%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe"
 if not exist build mkdir build
 echo [1/3] Kompilacja APK (moze potrwac 1-3 min)...
 call build_apk.bat > build\ostatnia_kompilacja.log 2>&1

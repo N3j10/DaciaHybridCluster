@@ -1,5 +1,5 @@
 # Uruchamia emulator Android Auto (DHU) z pelnym, graficznym ekranem zegarow (Canvas Surface)
-$sdk = "%USERPROFILE%\AppData\Local\Android\Sdk"
+$sdk = "$env:LOCALAPPDATA\Android\Sdk"
 $adb = "$sdk\platform-tools\adb.exe"
 $dhu = "$sdk\extras\google\auto\desktop-head-unit.exe"
 $dhuDir = Split-Path $dhu
