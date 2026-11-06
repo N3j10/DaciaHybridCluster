@@ -17,7 +17,7 @@ a równolegle kopia pętli sprzed refaktoru (`LegacyEngine`). Wyniki są porówn
 | Fizyczna spójność (NaN, ujemne moce, napęd i rekuperacja jednocześnie, suma mocy, 4x4 = 100%, moc na postoju) | **0 naruszeń** |
 | Obroty na ekranie = obroty z ramki 010C tego cyklu | **100% cykli** |
 | Trip nie spada przy ponownym połączeniu w trakcie jazdy | **OK** |
-| Testy jednostkowe (dekodery, protokół, transport, trip, konfiguracja) | **30/30 OK** |
+| Testy jednostkowe (dekodery, protokół, transport, trip, konfiguracja, cofanie) | **32/32 OK** |
 
 ### Zamierzone różnice względem starej wersji
 
@@ -30,6 +30,11 @@ a równolegle kopia pętli sprzed refaktoru (`LegacyEngine`). Wyniki są porówn
   zawsze, a pozostałe PID-y są ponawiane co 5 s.
 * **Przyspieszenie wzdłużne (g).** Jest liczone z pochodnej prędkości. W logach zakres wynosi −0,28…+0,36 g;
   wcześniej w trybie rzeczywistym było zawsze 0.
+
+* **Cofanie (dodane 6.11).** Skrzynia DW23 ma bieg R, a wybór sposobu cofania zależy od tego, czy pracuje
+  silnik spalinowy. W logu z jazdy, przy 469 cyklach cofania w ruchu: 314 to cofanie silnikiem spalinowym
+  (śr. 3,3 kW, napęd z przodu ~96%), a 155 to cofanie na samym tylnym silniku elektrycznym. Stary kod każde
+  cofanie liczył jako 100% tył i 0 kW z ICE. Nowy tryb nazywa się „COFANIE (ICE)”.
 
 ### Obserwacje z danych
 

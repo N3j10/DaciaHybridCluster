@@ -598,7 +598,8 @@ abstract class TelemetryRendererBase(private val logTag: String) : SurfaceCallba
                 val frontRegen = (data.totalRegenPowerKw - rearRegen).coerceAtLeast(0.0)
                 "${strings.rearLabel} -${fmtPwr(rearRegen)}  •  ${strings.frontLabel} -${fmtPwr(frontRegen)} kW"
             }
-            data.currentGear == "R" -> strings.reversingStatus
+            data.hybridMode == HybridMode.REVERSE -> strings.reversingStatus
+            data.hybridMode == HybridMode.REVERSE_ICE && data.totalOutputPowerKw <= 0.2 -> strings.reversingIceStatus
             data.hybridMode == HybridMode.PURE_EV -> {
                 "${strings.pureEvDriveStatus} ${fmtPwr(data.rearMotorPowerKw)} kW"
             }

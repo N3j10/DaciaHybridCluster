@@ -12,7 +12,8 @@ enum class HybridMode {
     REGEN,           // rekuperacja kinetyczna
     COASTING,        // żeglowanie, ICE wyłączony
     PURE_EV,         // jazda wyłącznie na tylnym silniku
-    REVERSE,         // bieg wsteczny (napęd e-AWD)
+    REVERSE,         // bieg wsteczny na tylnym silniku elektrycznym (ICE zgaszony)
+    REVERSE_ICE,     // bieg wsteczny R skrzyni DW23 – cofa silnik spalinowy
     AWD_4X4,         // tył napędzany prądem z przedniego generatora
     EAWD_BOOST,      // ICE + tył pod dużym obciążeniem
     HYBRID_EAWD,     // ICE + tył

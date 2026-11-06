@@ -70,7 +70,7 @@ object SimulationReport {
             if (nums.take(6).any { it < -1e-9 }) bad("ujemna moc")
             if (n.frontTorquePercent + n.rearTorquePercent != 100 || n.frontTorquePercent !in 0..100) bad("podział 4x4 ≠ 100%")
             if (n.totalOutputPowerKw > 0.05 && n.totalRegenPowerKw > 0.05) bad("napęd i rekuperacja jednocześnie")
-            if (n.hybridMode == HybridMode.HYBRID_AUTO || n.hybridMode == HybridMode.HYBRID_EAWD || n.hybridMode == HybridMode.EAWD_BOOST || n.hybridMode == HybridMode.AWD_4X4) {
+            if (n.hybridMode == HybridMode.HYBRID_AUTO || n.hybridMode == HybridMode.HYBRID_EAWD || n.hybridMode == HybridMode.EAWD_BOOST || n.hybridMode == HybridMode.AWD_4X4 || n.hybridMode == HybridMode.REVERSE_ICE) {
                 if (Math.abs(n.totalOutputPowerKw - (n.icePowerKw + n.rearMotorPowerKw + n.hsgPowerKw)) > 1e-6) bad("suma mocy ≠ ICE+tył+HSG")
             }
             if (n.speedKmH < 1.0 && (n.totalOutputPowerKw > 0 || n.totalRegenPowerKw > 0)) bad("moc na postoju")

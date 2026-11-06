@@ -11,7 +11,9 @@ import com.dacia.hybridcluster.model.TelemetryData
  */
 class PowertrainCalculator(
     private val trip: TripEnergyTracker,
-    private val clock: () -> Long = System::currentTimeMillis
+    private val clock: () -> Long = System::currentTimeMillis,
+    /** Tylko dla testów porównawczych: stary model cofania (zawsze tylko tylny silnik). */
+    private val legacyReverseModel: Boolean = false
 ) {
     private var smoothedFrontPct = 50.0
     private var regenConfirmCount = 0
@@ -143,7 +145,26 @@ class PowertrainCalculator(
                 hsgRegenKw = 0.0
                 hsgPowerKw = 0.0
             }
+            isReverse && rpm >= 400 && !legacyReverseModel -> {
+                // Cofanie silnikiem spalinowym przez bieg R skrzyni DW23 (wałek nieparzysty = 0x09).
+                // Logi z jazdy: przy pracującym ICE tył miał moment tylko w 2% odczytów,
+                // a ICE średnio ~29 Nm – więc liczymy jak jazdę hybrydową, nie jak napęd e-AWD.
+                val shaftIceKw = if (r.iceTorqueKnown && iceTorque > 0.0) {
+                    ((iceTorque * rpm) / 9549.0).coerceIn(0.0, 100.0)
+                } else 0.0
+                rawIceShaftKw = shaftIceKw
+                val rearKw = calcRearDriveKw
+                rearFromBatKw = if (rearKw > 0.0 && netTractionBatDischargeKw > 0.15) {
+                    rearKw.coerceAtMost(netTractionBatDischargeKw * 0.90)
+                } else 0.0
+                val genToRearKw = (rearKw - rearFromBatKw).coerceAtLeast(0.0)
+                icePowerKw = (shaftIceKw - genToRearKw).coerceAtLeast(0.0)
+                rearPowerKw = rearKw
+                totalOutput = icePowerKw + rearPowerKw + hsgPowerKw
+                hsgRegenKw = 0.0
+            }
             isReverse -> {
+                // Cofanie na samym tylnym silniku elektrycznym (ICE zgaszony)
                 val elecFromBat = (netTractionBatDischargeKw * 0.90).coerceIn(0.0, 20.0)
                 val rPower = if (elecFromBat > 0.15) Math.max(elecFromBat, calcRearDriveKw) else calcRearDriveKw
                 rearPowerKw = rPower
@@ -188,7 +209,8 @@ class PowertrainCalculator(
         val totalShare = frontPower + rearPower
         val rawFrontPct = when {
             isStandstill || isParkOrNeutral -> 50.0
-            isPureEv || isReverse -> 0.0
+            isPureEv -> 0.0
+            isReverse && frontPower <= 0.15 -> 0.0 // cofanie EV: 100% tył
             isKineticRegen -> {
                 val totReg = hsgRegenKw + rearRegenKw
                 if (totReg > 0.2) ((hsgRegenKw / totReg) * 100.0).coerceIn(0.0, 100.0) else 0.0
@@ -239,7 +261,7 @@ class PowertrainCalculator(
             isKineticRegen -> HybridMode.REGEN
             isCoasting -> HybridMode.COASTING
             isPureEv -> HybridMode.PURE_EV
-            isReverse -> HybridMode.REVERSE
+            isReverse -> if (rpm >= 400 && !legacyReverseModel) HybridMode.REVERSE_ICE else HybridMode.REVERSE
             rearPowerKw > 0.3 && rearFromBatKw <= 0.2 -> HybridMode.AWD_4X4
             icePowerKw > 8.0 && rearPowerKw > 2.5 -> HybridMode.EAWD_BOOST
             rearPowerKw > 0.5 -> HybridMode.HYBRID_EAWD

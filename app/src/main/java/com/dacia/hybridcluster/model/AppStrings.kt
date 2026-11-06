@@ -250,6 +250,7 @@ interface AppStrings {
     val stoppedStatus: String
     val charging48vStatus: String
     val reversingStatus: String
+    val reversingIceStatus: String
     val pureEvDriveStatus: String
     val coastingStatus: String
     val calibPreviewCardsInfoFull: String
@@ -479,6 +480,7 @@ object StringsPl : AppStrings {
     override val stoppedStatus = "POSTÓJ"
     override val charging48vStatus = "ŁADOWANIE BATERII 48V"
     override val reversingStatus = "COFANIE (e-AWD TYŁ)"
+    override val reversingIceStatus = "COFANIE (SILNIK SPALINOWY)"
     override val pureEvDriveStatus = "NAPĘD EV TYŁ"
     override val coastingStatus = "ŻEGLOWANIE"
     override val calibPreviewCardsInfoFull = "Kafelki parametrów\n(Moc, Temp, Bateria, Trip)"
@@ -495,6 +497,7 @@ object StringsPl : AppStrings {
         HybridMode.COASTING -> "ŻEGLOWANIE"
         HybridMode.PURE_EV -> "PURE EV"
         HybridMode.REVERSE -> "COFANIE (e-AWD)"
+        HybridMode.REVERSE_ICE -> "COFANIE (ICE)"
         HybridMode.AWD_4X4 -> "4x4 E-AWD"
         HybridMode.EAWD_BOOST -> "E-AWD BOOST"
         HybridMode.HYBRID_EAWD -> "HYBRYDA e-AWD"
@@ -744,6 +747,7 @@ object StringsEn : AppStrings {
     override val stoppedStatus = "STOPPED"
     override val charging48vStatus = "CHARGING 48V BATTERY"
     override val reversingStatus = "REVERSING (e-AWD REAR)"
+    override val reversingIceStatus = "REVERSING (ENGINE)"
     override val pureEvDriveStatus = "EV REAR DRIVE"
     override val coastingStatus = "COASTING"
     override val calibPreviewCardsInfoFull = "Telemetry tiles\n(Power, Temp, Bat, Trip)"
@@ -761,6 +765,7 @@ object StringsEn : AppStrings {
         HybridMode.COASTING -> "COASTING"
         HybridMode.PURE_EV -> "PURE EV"
         HybridMode.REVERSE -> "REVERSING (e-AWD)"
+        HybridMode.REVERSE_ICE -> "REVERSING (ICE)"
         HybridMode.AWD_4X4 -> "4x4 E-AWD"
         HybridMode.EAWD_BOOST -> "E-AWD BOOST"
         HybridMode.HYBRID_EAWD -> "HYBRID e-AWD"

@@ -29,13 +29,14 @@ object ReplaySimulator {
      * Trip w nowym kodzie jest jeden dla całego logu (tak jak w aplikacji po poprawce),
      * w starym – zerowany przy każdym połączeniu.
      *
-     * [legacyRetryPolicy] = true włącza w nowym kodzie starą politykę ponawiania nieudanych PID-ów –
+     * [legacyRetryPolicy] = true włącza w nowym kodzie starą politykę ponawiania nieudanych PID-ów
+     * i stary model cofania (zawsze tylny silnik) –
      * wtedy oba silniki muszą dać identyczne wyniki na KAŻDYM logu (dowód, że refaktor nie zmienił fizyki).
      */
     fun run(log: ParsedLog, withLegacy: Boolean = true, legacyRetryPolicy: Boolean = false): SimulationResult {
         val clock = SimClock()
         val trip = TripEnergyTracker(clock::read)
-        val calculator = PowertrainCalculator(trip, clock::read)
+        val calculator = PowertrainCalculator(trip, clock::read, legacyReverseModel = legacyRetryPolicy)
         val out = ArrayList<CycleResult>(log.totalCycles)
         var newQueries = 0
         var legacyQueries = 0
@@ -96,6 +97,7 @@ object ReplaySimulator {
         HybridMode.COASTING -> "ŻEGLOWANIE"
         HybridMode.PURE_EV -> "PURE EV"
         HybridMode.REVERSE -> "COFANIE (e-AWD)"
+        HybridMode.REVERSE_ICE -> "COFANIE (ICE)" // nie istniał w starym kodzie
         HybridMode.AWD_4X4 -> "4x4 E-AWD"
         HybridMode.EAWD_BOOST -> "E-AWD BOOST"
         HybridMode.HYBRID_EAWD -> "HYBRYDA e-AWD"
