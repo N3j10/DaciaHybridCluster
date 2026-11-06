@@ -8,6 +8,22 @@ Aplikacja Android / Android Auto dla samochodów **Dacia Hybrid-G 150 e-AWD** (D
 * **Ekran środkowy (Infotainment):** ten sam zestaw kafelków z obrotomierzem (pełny ekran) lub bez (podzielony ekran Coolwalk).
 * **Telefon:** konfiguracja w Jetpack Compose (elementy, kalibracja, diagnostyka OBD, podgląd na żywo) i tryb demo.
 
+**[English version below](#english)**
+
+## Pobieranie i instalacja
+
+Gotowy plik APK jest w zakładce **[Releases](https://github.com/N3j10/DaciaHybridCluster/releases/latest)**.
+
+**Aplikację trzeba zainstalować przez [KingInstaller](https://github.com/fcaronte/KingInstaller).**
+Android Auto pokazuje tylko aplikacje zainstalowane ze Sklepu Play. Po zwykłej instalacji pliku APK
+(np. z menedżera plików) aplikacja zainstaluje się na telefonie, ale **Android Auto jej nie zobaczy**.
+KingInstaller instaluje APK tak, jakby pochodził ze Sklepu Play.
+
+1. Pobierz `DaciaHybridCluster-vX.Y.Z.apk` z [ostatniego wydania](https://github.com/N3j10/DaciaHybridCluster/releases/latest) i skopiuj go na telefon.
+2. Zainstaluj [KingInstaller](https://github.com/fcaronte/KingInstaller/releases) na telefonie.
+3. W KingInstaller wybierz pobrany plik APK i zainstaluj go.
+4. Sparuj adapter vLinker w ustawieniach Bluetooth telefonu, wybierz go w aplikacji i podłącz telefon do Android Auto.
+
 ---
 
 ## Architektura
@@ -78,3 +94,35 @@ Raport z symulacji: uruchom `SimulationReportKt.main` (w Android Studio: zielona
 2. Podłącz telefon do Android Auto. Zapamiętany adapter łączy się automatycznie – także wtedy,
    gdy aplikacja na telefonie nie była otwierana.
 3. Test bez auta: `run_dhu.ps1` (DHU z ekranem zegarów).
+
+---
+
+<a id="english"></a>
+## English
+
+Android / Android Auto app for **Dacia Hybrid-G 150 e-AWD** cars (Duster III / Bigster):
+
+* **Cluster display:** e-AWD drivetrain telemetry, DW23 gearbox and rear eRAD gears, multi-segment power bar
+  (engine + rear e-motor + HSG + regeneration), 4x4 split, temperatures, 48V / 12V batteries, trip energy balance,
+  reasons why EV mode is blocked.
+* **Centre screen (infotainment):** the same tiles, with a tachometer (full screen) or without it (Coolwalk split screen).
+* **Phone:** settings in Jetpack Compose (elements, calibration, OBD diagnostics, live preview) and a demo mode.
+
+### Download and installation
+
+The ready-to-install APK is in **[Releases](https://github.com/N3j10/DaciaHybridCluster/releases/latest)**.
+
+**The app must be installed with [KingInstaller](https://github.com/fcaronte/KingInstaller).**
+Android Auto only shows apps installed from the Play Store. If you install the APK the usual way
+(e.g. from a file manager), the app will install on the phone, but **Android Auto will not see it**.
+KingInstaller installs the APK as if it came from the Play Store.
+
+1. Download `DaciaHybridCluster-vX.Y.Z.apk` from the [latest release](https://github.com/N3j10/DaciaHybridCluster/releases/latest) and copy it to the phone.
+2. Install [KingInstaller](https://github.com/fcaronte/KingInstaller/releases) on the phone.
+3. In KingInstaller, pick the downloaded APK and install it.
+4. Pair the vLinker adapter in the phone's Bluetooth settings, select it in the app and connect the phone to Android Auto.
+
+### Building
+
+`build_apk.bat` builds a debug APK (`DaciaHybridCluster.apk`), `build_apk.bat test` runs the JVM tests and the
+replay simulation on recorded drive logs first. `wydaj_release.bat` builds, pushes and publishes a GitHub release.
